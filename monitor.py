@@ -20,8 +20,23 @@ def fetch_products():
     products = {}
     with sync_playwright() as p:
         browser = p.chromium.launch()
-        page = browser.new_page()
-        page.goto(SHOP_URL, wait_until="networkidle", timeout=60000)
+        context = browser.new_context(
+            user_agent=("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                        "(KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36"),
+            viewport={"width": 1366, "height": 900},
+        )
+        page = context.new_page()
+        try:
+            # Don't wait for "networkidle": store pages never go fully quiet.
+            page.goto(SHOP_URL, wait_until="domcontentloaded", timeout=90000)
+            page.wait_for_selector('a[href*="/product/"]', timeout=60000)
+        except Exception as exc:
+            print(f"Page did not show products: {exc}", file=sys.stderr)
+            page.screenshot(path="debug.png", full_page=True)
+            Path("debug.html").write_text(page.content())
+            print("Page title:", page.title(), file=sys.stderr)
+            browser.close()
+            return {}
         # Scroll to trigger lazy loading / "load more" style listings.
         last = -1
         for _ in range(15):
