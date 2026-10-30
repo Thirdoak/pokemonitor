@@ -18,6 +18,15 @@ jobs:
           SMTP_USER: ${{ secrets.SMTP_USER }}
           SMTP_PASS: ${{ secrets.SMTP_PASS }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
+      - name: Save debug screenshot if it failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug
+          path: |
+            debug.png
+            debug.html
+          if-no-files-found: ignore
       - name: Save seen products
         run: |
           git config user.name "monitor-bot"
